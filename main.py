@@ -1,3 +1,5 @@
+import sys
+
 from scapy.utils import rdpcap
 from scapy.all import raw
 
@@ -11,7 +13,7 @@ import re
 
 from Frame import Frame
 
-from ruamel.yaml import YAML
+import ruamel.yaml
 
 
 class GUI(tk.Tk):
@@ -59,6 +61,20 @@ def openFile(fname):
     print(fname.split("/")[-1])
     return file
 
+def getCleanRaw(frame, index) -> list:
+    clean = re.findall("x[0-9,a-f]{2}", str(raw(frame[index])))
+
+    for i in range(len(clean)):
+        clean[i] = ((clean[i])[1:]).upper()
+
+    """for k, num in enumerate(clean):
+        if k % 16 == 0:
+            print()
+        print(num, end=" ")"""
+
+    return clean
+
+
 f = None
 gui = GUI()
 gui.start()
@@ -70,39 +86,29 @@ if f is None:
 
 #Ether / IP / TCP 192.168.1.33:50032 > 147.175.1.55:http A
 
-#frames = [Frame() for i in range(len(f))]
 
-a = str(f[0]).split("/")
+yaml = ruamel.yaml.YAML()
+yaml.register_class(Frame)
 
-print(str(raw(f[0])))
+frames = [Frame(i,
+                len(f[i]),
+                str(f[i]).split("/")[0],
+                getCleanRaw(f,i)[:6],
+                getCleanRaw(f,i)[6:12],
+                getCleanRaw(f,i))
+          for i in range(len(f))
+          ]
 
-b = re.findall("x[0-9,a-f]{2}",str(raw(f[0])))
-
-for i in range(len(b)):
-    b[i] = ((b[i])[1:]).upper()
-
-for k,num in enumerate(b):
-    if k%16==0:
-        print()
-    print(num, end=" ")
-
-frames = [Frame(i,len(f[i]),"Eth",b[:6],b[6:12]) for i in range(len(f))]
-
-"""print()
+print()
 print()
 for frame in frames:
     print(frame)
-    print()"""
+    print()
 
-"""print(f"Number of frames: {len(f)}")
-for i in (range(len(f)) if len(f) < 50 else range(50)):
-    
-    print(f"Sequence number: {i}")
-    print(f"Length: {len(f[i])}")
-    print(f[i])
-    print(str(raw(f[i])))"""
+output = int(input("Gib sequence number of frame to output: "))
+with open(f"frame_{output}.yaml",mode="w") as out:
+    yaml.dump(frames[output],out)
 
-#frame = Frame(1,125,"Ethernet II","22:2B:1D:2C:9A","22:2B:1D:2C:9A")
 
 
 

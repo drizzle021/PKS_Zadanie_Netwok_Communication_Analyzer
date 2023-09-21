@@ -1,19 +1,20 @@
-import sys
+from sys import exit
+from Frame import Frame
+from File import File
+from Senders import Sender
+from Ethernet import Ethernet
+from IEEERaw import IeeeRaw
+from IEEELLC import IeeeLLC
+from IEEESNAP import IeeeSNAP
 
 from scapy.utils import rdpcap
 from scapy.all import raw
+import ruamel.yaml
 
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
 from tkinter.filedialog import askopenfilename
-from sys import exit
-
-import re
-
-from Frame import Frame
-
-import ruamel.yaml
 
 
 class GUI(tk.Tk):
@@ -62,10 +63,15 @@ def openFile(fname):
     return file
 
 def getCleanRaw(frame, index) -> list:
+    clean = str(raw(frame[index]).hex(" ")).upper().split(" ")
+
+
+    """
     clean = re.findall("x[0-9,a-f]{2}", str(raw(frame[index])))
 
     for i in range(len(clean)):
         clean[i] = ((clean[i])[1:]).upper()
+    """
 
     """for k, num in enumerate(clean):
         if k % 16 == 0:
@@ -74,30 +80,43 @@ def getCleanRaw(frame, index) -> list:
 
     return clean
 
+def indentifyType(index, hexFrame, iframe):
+    joint = int("".join(hexFrame[12:14]),16)
+    if joint >= 1536:
+        return Ethernet(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+    elif joint <= 1500:
+        if "".join(hexFrame[14:16]) == "AAAA":
+            return IeeeSNAP(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
 
-f = None
+        elif "".join(hexFrame[14:16]) == "FFFF":
+            return IeeeRaw(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+        else:
+            return IeeeLLC(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+
+f = ""
 gui = GUI()
 gui.start()
 
-if f is None:
+if f == "":
     print("File was not chosen")
     exit(1)
 
-
-#Ether / IP / TCP 192.168.1.33:50032 > 147.175.1.55:http A
-
-
 yaml = ruamel.yaml.YAML()
 yaml.register_class(Frame)
+yaml.register_class(File)
+yaml.register_class(Sender)
+yaml.register_class(Ethernet)
+yaml.register_class(IeeeSNAP)
+yaml.register_class(IeeeLLC)
+yaml.register_class(IeeeRaw)
 
-frames = [Frame(i,
-                len(f[i]),
-                str(f[i]).split("/")[0],
-                getCleanRaw(f,i)[:6],
-                getCleanRaw(f,i)[6:12],
-                getCleanRaw(f,i))
+frames = [indentifyType(i,getCleanRaw(f,i),f)
           for i in range(len(f))
           ]
+
+
+file = File("test.yaml", "xxxx.pcap",frames)
+
 
 print()
 print()
@@ -105,12 +124,14 @@ for frame in frames:
     print(frame)
     print()
 
-output = int(input("Gib sequence number of frame to output: "))
+
+"""output = int(input("Gib sequence number of frame to output: "))
 with open(f"frame_{output}.yaml",mode="w") as out:
-    yaml.dump(frames[output],out)
+    yaml.dump(frames[output],out)"""
 
+#with open("frames.yaml",mode="w") as out:
+#    for frame in frames:
+#        yaml.dump(frame,out)
 
-
-
-
-
+with open(file.fName,mode="w") as out:
+    yaml.dump(file,out)

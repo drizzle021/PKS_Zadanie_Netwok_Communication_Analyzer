@@ -1,21 +1,31 @@
+from Types import types
+from Types import pids,saps
+
 class Frame:
-    def __init__(self, number, length, frameType, source, dest, data):
-        self.sequenceNumber = number
-        self.length = length # length of frame in bytes
-        self.type = frameType.rstrip() # Eth II, IEEE...
-        self.source = ":".join(source) # MAC address
-        self.destination = ":".join(dest) # MAC address
-        self.data = ""
+    def __init__(self, number, length, frameType, sourceMAC, destMAC, data):
+        self.frameNumber = number+1
+        self.pcapLength = length # length of frame in bytes
+        self.mediumLength= length # ???
+        self.type = frameType # Ethernet II / IEEE
+        self.sourceMAC = ":".join(sourceMAC) # MAC address
+        self.destinationMAC = ":".join(destMAC) # MAC address
+        self.hexFrame = ""
+
+
+
 
         for k, num in enumerate(data):
                 if k % 16 == 0:
-                    self.data+="\n"
-                self.data+= f"{num} "
+                    self.hexFrame+="\n"
+                self.hexFrame+= f"{num} "
 
     def __str__(self):
-        return f"Sequence Number: {self.sequenceNumber}\n" \
-               f"Frame Length: {self.length} Bytes\n" \
+        return f"Frame Number: {self.frameNumber}\n" \
+               f"Frame .pcap Length: {self.pcapLength} B\n" \
+               f"Frame Medium Length: {self.mediumLength} B" \
                f"Frame Type: {self.type}\n" \
-               f"Source: {self.source}\n" \
-               f"Destination: {self.destination}\n\n" \
-               f"{self.data}"
+               f"Source: {self.sourceMAC}\n" \
+               f"Destination: {self.destinationMAC}\n\n" \
+               f"1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16\n" \
+               "------------------------------------------------" \
+               #f"{hexFrame}"

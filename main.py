@@ -1,3 +1,5 @@
+import sys
+import textwrap
 from sys import exit
 from Frame import Frame
 from File import File
@@ -133,5 +135,14 @@ with open(f"frame_{output}.yaml",mode="w") as out:
 #    for frame in frames:
 #        yaml.dump(frame,out)
 
+
+#data = yaml.load(file)
+from ruamel.yaml.scalarstring import LiteralScalarString
+for i in range(len(file.packets)):
+    file.packets[i].hexFrame = LiteralScalarString(textwrap.dedent(file.packets[i].hexFrame))
+
 with open(file.fName,mode="w") as out:
     yaml.dump(file,out)
+
+print(raw(f[0]))
+

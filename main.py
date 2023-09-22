@@ -63,24 +63,10 @@ class GUI(tk.Tk):
 def openFile(fname):
     file = rdpcap(fname)
     print(fname.split("/")[-1])
-    return file
+    return tuple([fname, file])
 
 def getCleanRaw(frame, index) -> list:
     clean = str(raw(frame[index]).hex(" ")).upper().split(" ")
-
-
-    """
-    clean = re.findall("x[0-9,a-f]{2}", str(raw(frame[index])))
-
-    for i in range(len(clean)):
-        clean[i] = ((clean[i])[1:]).upper()
-    """
-
-    """for k, num in enumerate(clean):
-        if k % 16 == 0:
-            print()
-        print(num, end=" ")"""
-
     return clean
 
 def indentifyType(index, hexFrame, iframe):
@@ -100,9 +86,14 @@ f = ""
 gui = GUI()
 gui.start()
 
+
 if f == "":
     print("File was not chosen")
     exit(1)
+
+filename, f = f
+
+filename = filename.split("/")[-1]
 
 yaml = ruamel.yaml.YAML()
 yaml.register_class(Frame)
@@ -118,7 +109,7 @@ frames = [indentifyType(i,getCleanRaw(f,i),f)
           ]
 
 
-file = File("test.yaml", "xxxx.pcap",frames)
+file = File("test.yaml", filename,frames)
 
 
 print()
@@ -127,17 +118,6 @@ for frame in frames:
     print(frame)
     print()
 
-
-"""output = int(input("Gib sequence number of frame to output: "))
-with open(f"frame_{output}.yaml",mode="w") as out:
-    yaml.dump(frames[output],out)"""
-
-#with open("frames.yaml",mode="w") as out:
-#    for frame in frames:
-#        yaml.dump(frame,out)
-
-
-#data = yaml.load(file)
 
 for i in range(len(file.packets)):
     file.packets[i].hexFrame = LiteralScalarString(textwrap.dedent(file.packets[i].hexFrame))

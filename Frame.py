@@ -1,5 +1,4 @@
 from Types import types
-from Types import pids,saps
 
 class Frame:
     def __init__(self, number, length, frameType, sourceMAC, destMAC, data):

@@ -1,12 +1,13 @@
 from Frame import Frame
-from Types import saps
+from Types import types,initialize
 class IeeeLLC(Frame):
     def __init__(self, number, length, sourceMAC, destinationMAC, data):
         super().__init__(number, length, "IEEE 802.3 LLC", sourceMAC, destinationMAC, data)
+        initialize()
         self.sap = ""
 
         try:
-            self.sap = saps[int(data[14], 16)]  # from payload start byte
+            self.sap = types["saps"][int(data[14], 16)]  # from payload start byte
         except KeyError:
             print(f"wrong key helo <{int(data[14], 16)}>")
             self.sap = "NaN"

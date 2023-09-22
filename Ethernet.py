@@ -1,9 +1,10 @@
 from Frame import Frame
-from Types import etherTypes
+from Types import types,initialize
 class Ethernet(Frame):
     def __init__(self, number, length, sourceMAC, destinationMAC, data):
         super().__init__(number, length, "Ethernet II", sourceMAC, destinationMAC, data)
-        self.ethType = etherTypes[int("".join(data[12:14]),16)]
+        initialize()
+        self.ethType = types["etherTypes"][int("".join(data[12:14]),16)]
 
         if self.ethType != "ARP":
             self.totalLength = int("".join(data[16:18]),16)

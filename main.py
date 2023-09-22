@@ -12,6 +12,7 @@ from IEEESNAP import IeeeSNAP
 from scapy.utils import rdpcap
 from scapy.all import raw
 import ruamel.yaml
+from ruamel.yaml.scalarstring import LiteralScalarString
 
 import tkinter as tk
 from tkinter import ttk
@@ -85,15 +86,15 @@ def getCleanRaw(frame, index) -> list:
 def indentifyType(index, hexFrame, iframe):
     joint = int("".join(hexFrame[12:14]),16)
     if joint >= 1536:
-        return Ethernet(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+        return Ethernet(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
     elif joint <= 1500:
         if "".join(hexFrame[14:16]) == "AAAA":
-            return IeeeSNAP(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+            return IeeeSNAP(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
 
         elif "".join(hexFrame[14:16]) == "FFFF":
-            return IeeeRaw(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+            return IeeeRaw(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
         else:
-            return IeeeLLC(index, len(iframe),hexFrame[:6], hexFrame[6:12], hexFrame)
+            return IeeeLLC(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
 
 f = ""
 gui = GUI()
@@ -137,12 +138,9 @@ with open(f"frame_{output}.yaml",mode="w") as out:
 
 
 #data = yaml.load(file)
-from ruamel.yaml.scalarstring import LiteralScalarString
+
 for i in range(len(file.packets)):
     file.packets[i].hexFrame = LiteralScalarString(textwrap.dedent(file.packets[i].hexFrame))
 
 with open(file.fName,mode="w") as out:
     yaml.dump(file,out)
-
-print(raw(f[0]))
-

@@ -1,4 +1,3 @@
-import sys
 import textwrap
 from sys import exit
 from Frame import Frame

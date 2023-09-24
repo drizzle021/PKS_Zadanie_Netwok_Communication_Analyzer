@@ -3,4 +3,4 @@ class IeeeRaw(Frame):
     def __init__(self, number, length, sourceMAC, destinationMAC, data):
         super().__init__(number, length, "IEEE 802.3 Raw", sourceMAC, destinationMAC, data)
 
-        self.totalLength = int("".join(data[12:14]), 16)
+        #self.totalLength = int("".join(data[12:14]), 16)

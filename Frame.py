@@ -1,10 +1,10 @@
-from Types import types
+
 
 class Frame:
     def __init__(self, number, length, frameType, sourceMAC, destMAC, data):
         self.frameNumber = number+1
         self.pcapLength = length # length of frame in bytes
-        self.totalLength = None # ???
+        self.mediumLength = max(64, length + 4) # ???
         self.type = frameType # Ethernet II / IEEE
         self.sourceMAC = ":".join(sourceMAC) # MAC address
         self.destinationMAC = ":".join(destMAC) # MAC address
@@ -18,7 +18,7 @@ class Frame:
     def __str__(self):
         return f"Frame Number: {self.frameNumber}\n" \
                f"Frame .pcap Length: {self.pcapLength} B\n" \
-               f"Frame Medium Length: {self.totalLength} B\n" \
+               f"Frame Medium Length: {self.mediumLength} B\n" \
                f"Frame Type: {self.type}\n" \
                f"Source: {self.sourceMAC}\n" \
                f"Destination: {self.destinationMAC}\n" \

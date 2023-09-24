@@ -13,3 +13,4 @@ def initialize():
             else:
                 types.update({line[1:]: dict()})
                 name = line[1:]
+

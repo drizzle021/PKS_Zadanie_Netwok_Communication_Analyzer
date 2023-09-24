@@ -12,12 +12,12 @@ class IeeeLLC(Frame):
             print(f"wrong key helo <{int(data[14], 16)}>")
             self.sap = "NaN"
 
-        self.totalLength = int("".join(data[12:14]), 16)
+        #self.totalLength = int("".join(data[12:14]), 16)
 
     def __str__(self):
         return f"Frame Number: {self.frameNumber}\n" \
                f"Frame .pcap Length: {self.pcapLength} B\n" \
-               f"Frame Total Length: {self.totalLength} B\n" \
+               f"Frame Medium Length: {self.mediumLength} B\n" \
                f"Frame Type: {self.type}\n" \
                f"Source: {self.sourceMAC}\n" \
                f"Destination: {self.destinationMAC}\n" \

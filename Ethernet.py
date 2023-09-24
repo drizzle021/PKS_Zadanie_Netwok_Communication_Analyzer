@@ -49,16 +49,16 @@ class Ethernet(Frame):
 
     def __str__(self):
         text = ""
-        text += f"Frame Number: {self.frameNumber}\n"
-        text += f"Frame .pcap Length: {self.pcapLength} B\n"
-        text += f"Frame Medium Length: {self.mediumLength} B\n"
-        text += f"Frame Type: {self.type}\n"
-        text += f"Source: {self.sourceMAC}\n"
-        text += f"Destination: {self.destinationMAC}\n"
+        text += f"Frame Number: {self.frame_number}\n"
+        text += f"Frame .pcap Length: {self.len_frame_pcap} B\n"
+        text += f"Frame Medium Length: {self.len_frame_medium} B\n"
+        text += f"Frame Type: {self.frame_type}\n"
+        text += f"Source: {self.src_mac}\n"
+        text += f"Destination: {self.dst_mac}\n"
         text += f"Hex:\n"
         text += f"1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16\n"
         text += "------------------------------------------------"
-        text += f"{self.hexFrame}\n"
+        text += f"{self.hexa_frame}\n"
         text += f"Ether Type: {self.ethType}\n"
         if self.ethType == "IPv4":
             text+= f"IPv4 Protocol: {self.ipv4Protocol}\n"

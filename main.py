@@ -119,7 +119,29 @@ for frame in frames:
 
 
 for i in range(len(file.packets)):
-    file.packets[i].hexFrame = LiteralScalarString(textwrap.dedent(file.packets[i].hexFrame))
+    file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))
 
-with open(file.fName,mode="w") as out:
+with open("test.yaml",mode="w") as out:
     yaml.dump(file,out)
+
+lines = []
+with open("test.yaml",mode="r") as out:
+    lines = out.readlines()
+
+with open("test.yaml",mode="w") as out:
+    flag = 0
+    for k,line in enumerate(lines):
+        """if line.find("|2") >= 0 :
+            line = line.replace("|2","|")"""
+
+        if line.find("!") == -1 :
+            if flag == 1:
+                out.write("- "+line)
+                flag = 2
+            elif flag == 2:
+                out.write("  "+line)
+            else:
+                out.write(line)
+        else:
+            if k != 0:
+                flag = 1

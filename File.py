@@ -1,7 +1,7 @@
 from Senders import Sender
 class File:
     def __init__(self, fName, pcapName,frames):
-        self.name = "PKS2023/24"
+        self.name = fName
         self.pcap_name = pcapName
         self.packets = frames
 

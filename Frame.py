@@ -1,5 +1,3 @@
-
-
 class Frame:
     def __init__(self, number, length, frameType, sourceMAC, destMAC, data):
         self.frame_number = number + 1
@@ -13,7 +11,8 @@ class Frame:
         for k, num in enumerate(data):
             if k % 16 == 0:
                 self.hexa_frame =self.hexa_frame.rstrip()
-                self.hexa_frame+= "\n"
+                if k!=0:
+                    self.hexa_frame+= "\n"
             self.hexa_frame+= f"{num} "
 
         self.hexa_frame = self.hexa_frame.rstrip()
@@ -28,5 +27,5 @@ class Frame:
                f"Destination: {self.dst_mac}\n" \
                f"Hex:\n" \
                f"1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16\n" \
-               "------------------------------------------------" \
+               "------------------------------------------------\n" \
                f"{self.hexa_frame}"

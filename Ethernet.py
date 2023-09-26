@@ -44,9 +44,6 @@ class Ethernet(Frame):
         except AttributeError:
             pass
 
-            """if self.ethType != "ARP":
-            self.totalLength = int("".join(data[16:18]),16)"""
-
     def __str__(self):
         text = ""
         text += f"Frame Number: {self.frame_number}\n"
@@ -57,7 +54,7 @@ class Ethernet(Frame):
         text += f"Destination: {self.dst_mac}\n"
         text += f"Hex:\n"
         text += f"1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16\n"
-        text += "------------------------------------------------"
+        text += "------------------------------------------------\n"
         text += f"{self.hexa_frame}\n"
         text += f"Ether Type: {self.ethType}\n"
         if self.ethType == "IPv4":

@@ -18,7 +18,7 @@ from tkinter import ttk
 from tkinter.messagebox import showinfo
 from tkinter.filedialog import askopenfilename
 
-
+# minimal GUI for file selection
 class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -59,25 +59,33 @@ class GUI(tk.Tk):
     def start(self):
         self.mainloop()
 
+# opens .pcap file and returns a tuple with the file and its name
 def openFile(fname):
     file = rdpcap(fname)
     print(fname.split("/")[-1])
     return tuple([fname, file])
 
+# clean up the byte string
 def getCleanRaw(frame, index) -> list:
     clean = str(raw(frame[index]).hex(" ")).upper().split(" ")
     return clean
 
+# identifies if the frame is ETHERNET or IEEE 802.3
 def indentifyType(index, hexFrame, iframe):
     joint = int("".join(hexFrame[12:14]),16)
+
+    # if the joint bytes are >= 1536 it's ETHERNET. If <= 1500 its IEEE 802.3
     if joint >= 1536:
         return Ethernet(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
+
     elif joint <= 1500:
+        # check payload's first two bytes
         if "".join(hexFrame[14:16]) == "AAAA":
             return IeeeSNAP(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
 
         elif "".join(hexFrame[14:16]) == "FFFF":
             return IeeeRaw(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
+
         else:
             return IeeeLLC(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
 
@@ -103,43 +111,46 @@ yaml.register_class(IeeeSNAP)
 yaml.register_class(IeeeLLC)
 yaml.register_class(IeeeRaw)
 
+# Create Frame objects
 frames = [indentifyType(i,getCleanRaw(f,i),f)
           for i in range(len(f))
           ]
 
+file = File("PKS2023_24", filename,frames)
 
-file = File("test.yaml", filename,frames)
-
-
-print()
+#console output
+"""print()
 print()
 for frame in frames:
     print(frame)
     print()
-
-
+"""
+# fix the hexaframe, so it retains block style 16 bytes/line
 for i in range(len(file.packets)):
     file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))
 
-with open("test.yaml",mode="w") as out:
+# create yaml file
+with open(file.name+".yaml",mode="w") as out:
     yaml.dump(file,out)
 
+# read the yaml file
 lines = []
-with open("test.yaml",mode="r") as out:
+with open(file.name+".yaml",mode="r") as out:
     lines = out.readlines()
 
-with open("test.yaml",mode="w") as out:
+# reformat the file for the validator
+with open(file.name+".yaml",mode="w") as out:
     flag = 0
     for k,line in enumerate(lines):
-        """if line.find("|2") >= 0 :
-            line = line.replace("|2","|")"""
+        if line.rstrip() == f"name: {file.name}":
+            line = line.replace("_","/")
 
-        if line.find("!") == -1 :
+        if line.find("!") == -1 :   # removing class tags
             if flag == 1:
-                out.write("- "+line)
+                out.write("- "+line) # remove hyphens at the start of lines after class tags
                 flag = 2
             elif flag == 2:
-                out.write("  "+line)
+                out.write("  "+line) # add indents if hyphen was removed
             else:
                 out.write(line)
         else:

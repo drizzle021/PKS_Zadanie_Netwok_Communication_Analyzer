@@ -10,7 +10,7 @@ class IeeeLLC(Frame):
             self.sap = types["saps"][int(data[14], 16)]  # from payload start byte
         except KeyError:
             print(f"wrong key helo <{int(data[14], 16)}>")
-            self.sap = "NaN"
+            self.sap = "semmi"
 
     def __str__(self):
         return f"Frame Number: {self.frame_number}\n" \

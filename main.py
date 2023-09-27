@@ -64,7 +64,6 @@ def openFile(fname):
     file = rdpcap(fname)
     print(fname.split("/")[-1])
     return tuple([fname, file])
-
 # clean up the byte string
 def getCleanRaw(frame, index) -> list:
     clean = str(raw(frame[index]).hex(" ")).upper().split(" ")
@@ -119,12 +118,12 @@ frames = [indentifyType(i,getCleanRaw(f,i),f)
 file = File("PKS2023_24", filename,frames)
 
 #console output
-"""print()
+print()
 print()
 for frame in frames:
     print(frame)
     print()
-"""
+
 # fix the hexaframe, so it retains block style 16 bytes/line
 for i in range(len(file.packets)):
     file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))

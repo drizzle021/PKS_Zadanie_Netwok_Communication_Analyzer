@@ -10,8 +10,9 @@ class IeeeLLC(Frame):
             self.sap = types["saps"][int(data[14], 16)]  # from payload start byte
         except KeyError:
             print(f"wrong key helo <{int(data[14], 16)}>")
-            self.sap = "semmi"
+            self.sap = "WrongHex"
 
+    # string representation of the Object
     def __str__(self):
         return f"Frame Number: {self.frame_number}\n" \
                f"Frame .pcap Length: {self.len_frame_pcap} B\n" \

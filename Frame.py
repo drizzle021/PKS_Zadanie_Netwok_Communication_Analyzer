@@ -3,11 +3,13 @@ class Frame:
         self.frame_number = number + 1
         self.len_frame_pcap = length # length of frame in bytes
         self.len_frame_medium = max(64, length + 4) # ???
-        self.frame_type = frameType # Ethernet II / IEEE
-        self.src_mac = ":".join(sourceMAC) # MAC address
-        self.dst_mac = ":".join(destMAC) # MAC address
+
+        self.frame_type = frameType  # Ethernet II / IEEE
+        self.src_mac = ":".join(sourceMAC)  # MAC address
+        self.dst_mac = ":".join(destMAC)  # MAC address
         self.hexa_frame = ""
 
+        # formatting the hex string
         for k, num in enumerate(data):
             if k % 16 == 0:
                 self.hexa_frame =self.hexa_frame.rstrip()
@@ -18,6 +20,8 @@ class Frame:
         self.hexa_frame = self.hexa_frame.rstrip()
         self.hexa_frame+="\n"
 
+
+    # string representation of the Object
     def __str__(self):
         return f"Frame Number: {self.frame_number}\n" \
                f"Frame .pcap Length: {self.len_frame_pcap} B\n" \

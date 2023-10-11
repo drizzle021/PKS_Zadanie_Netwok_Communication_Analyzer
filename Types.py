@@ -1,8 +1,9 @@
 types = {}
 
+# reads and formats the types.txt into a dictionary
 def initialize():
     global types
-    with open("Types.txt", mode="r") as f:
+    with open("Protocols/Types.txt", mode="r") as f:
         for line in f:
             line = line.rstrip()
             if line[0] != "#":

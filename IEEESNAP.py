@@ -11,6 +11,7 @@ class IeeeSNAP(Frame):
         else:
             self.pid += types["pids"][int("".join(data[21:23]), 16)]
 
+    # string representation of the Object
     def __str__(self):
         return f"Frame Number: {self.frame_number}\n" \
                f"Frame .pcap Length: {self.len_frame_pcap} B\n" \

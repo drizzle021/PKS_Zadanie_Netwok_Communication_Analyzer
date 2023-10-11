@@ -13,37 +13,47 @@ class Ethernet(Frame):
         super().__init__(number, length, "Ethernet II", sourceMAC, destinationMAC, data)
         initialize()
         try:
-            self.ethType = types["etherTypes"][int("".join(data[12:14]),16)]
+            self.ether_type = types["etherTypes"][int("".join(data[12:14]), 16)]
         except KeyError:
-            self.ethType = "Unknown"
+            self.ether_type = "Unknown"
 
-        self.sourceIP = formatIP(data[26:30])
-        self.destinationIP = formatIP(data[30:34])
+        # if ether_type is ARP we need to jump some bytes
+        if self.ether_type == "ARP":
+            if int(data[21], 16) == 1:
+                self.arp_opcode = "REQUEST"
+            elif int(data[21], 16) == 2:
+                self.arp_opcode = "REPLY"
+            self.src_ip = formatIP(data[28:32])
+            self.dst_ip = formatIP(data[38:42])
 
-        if self.ethType == "IPv4":
-            self.ipv4Protocol = types["ipv4Protocol"][int(data[23],16)]
+        else:
+            self.src_ip = formatIP(data[26:30])
+            self.dst_ip = formatIP(data[30:34])
 
-        self.sourcePort = int("".join(data[34:36]),16)
-        self.destinationPort = int("".join(data[36:38]),16)
+        if self.ether_type == "IPv4":
+            self.protocol = types["ipv4Protocol"][int(data[23], 16)]
 
+        if self.ether_type!= "ARP":
+            self.src_port = int("".join(data[34:36]), 16)
+            self.dst_port = int("".join(data[36:38]), 16)
 
-        # TODO find app protocol
         try:
-            if self.ipv4Protocol == "UDP":
-                if  f"{self.sourcePort}" in types["udpProtocol"].keys():
-                    self.appProtocol = types["udpProtocol"][str(self.sourcePort)]
-                elif f"{self.destinationPort}" in types["udpProtocol"].keys():
-                    self.appProtocol = types["udpProtocol"][str(self.destinationPort)]
+            if self.protocol == "UDP":
+                if  f"{self.src_port}" in types["udpProtocol"].keys():
+                    self.app_protocol = types["udpProtocol"][str(self.src_port)]
+                elif f"{self.dst_port}" in types["udpProtocol"].keys():
+                    self.app_protocol = types["udpProtocol"][str(self.dst_port)]
 
-            if self.ipv4Protocol=="TCP":
-                if f"{self.sourcePort}" in types["tcpProtocol"].keys():
-                    self.appProtocol = types["tcpProtocol"][str(self.sourcePort)]
-                elif f"{self.destinationPort}" in types["tcpProtocol"].keys():
-                   self.appProtocol = types["tcpProtocol"][str(self.destinationPort)]
+            if self.protocol== "TCP":
+                if f"{self.src_port}" in types["tcpProtocol"].keys():
+                    self.app_protocol = types["tcpProtocol"][str(self.src_port)]
+                elif f"{self.dst_port}" in types["tcpProtocol"].keys():
+                   self.app_protocol = types["tcpProtocol"][str(self.dst_port)]
 
         except AttributeError:
             pass
 
+    # string representation of the Object
     def __str__(self):
         text = ""
         text += f"Frame Number: {self.frame_number}\n"
@@ -56,20 +66,22 @@ class Ethernet(Frame):
         text += f"1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16\n"
         text += "------------------------------------------------\n"
         text += f"{self.hexa_frame}\n"
-        text += f"Ether Type: {self.ethType}\n"
-        if self.ethType == "IPv4":
-            text+= f"IPv4 Protocol: {self.ipv4Protocol}\n"
-        text += f"Source IP: {self.sourceIP}\n"
-        text += f"Destination IP: {self.destinationIP}\n"
+        text += f"Ether Type: {self.ether_type}\n"
+        if self.ether_type == "ARP":
+            text+= f"ARP Opode: {self.arp_opcode}\n"
+        if self.ether_type == "IPv4":
+            text+= f"IPv4 Protocol: {self.protocol}\n"
+        text += f"Source IP: {self.src_ip}\n"
+        text += f"Destination IP: {self.dst_ip}\n"
         try:
-            if self.ipv4Protocol == "UDP" or self.ipv4Protocol == "TCP":
-                text += f"Source Port: {self.sourcePort}\n"
-                text += f"Destination Port: {self.destinationPort}\n"
+            if self.protocol == "UDP" or self.protocol == "TCP":
+                text += f"Source Port: {self.src_port}\n"
+                text += f"Destination Port: {self.dst_port}\n"
 
                 try:
-                    text += f"App Protocol: {self.appProtocol}"
+                    text += f"App Protocol: {self.app_protocol}"
                 except AttributeError:
-                    print(f"<Error> {self.sourcePort} or {self.destinationPort} Port not part of Types.txt")
+                    print(f"<Error> {self.src_port} or {self.dst_port} Port not part of Types.txt")
                     print(f"To show more ports add them to the txt")
                     print()
 

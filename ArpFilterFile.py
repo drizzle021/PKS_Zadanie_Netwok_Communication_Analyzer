@@ -1,10 +1,4 @@
-from File import File
-class Communication:
-    def __init__(self, n, frames):
-        self.number_comm = n
-        self.packets = frames
-
-
+from Communication import Communication
 class ArpFilterFile:
     def __init__(self, fName, pcapName, frames):
         self.name = fName

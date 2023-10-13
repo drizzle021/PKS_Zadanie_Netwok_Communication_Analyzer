@@ -4,7 +4,9 @@ from sys import exit
 from WrongFilterException import WrongFilterException
 from Frame import Frame
 from File import File
-from ArpFilterFile import ArpFilterFile, Communication
+from ArpFilterFile import ArpFilterFile
+from TcpFilterFile import TcpFilterFile
+from Communication import Communication
 from Senders import Sender
 from Ethernet import Ethernet
 from IEEERaw import IeeeRaw
@@ -18,7 +20,7 @@ from ruamel.yaml.scalarstring import LiteralScalarString
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter.messagebox import showinfo
+from tkinter.messagebox import showerror
 from tkinter.filedialog import askopenfilename
 
 from Types import types,initialize
@@ -65,8 +67,6 @@ class GUI(tk.Tk):
         self.button["command"] = self.submit
         self.button.grid(row=5,column=1)
 
-
-
     def selectFile(self):
         filename = askopenfilename()
         self.inputField.delete(0, tk.END)
@@ -78,8 +78,9 @@ class GUI(tk.Tk):
         #showinfo(title='Information', message=f'Submitted: {inp}')
 
         f = tuple(openFile(inp) + [self.inputFieldFilter.get().upper().strip()])
-        if self.inputFieldFilter.get().upper().strip() not in filterProtocols:
-            raise WrongFilterException
+        if self.inputFieldFilter.get().upper().strip() not in filterProtocols and self.inputFieldFilter.get().upper().strip() != "" :
+            showerror(title='Information', message=f"Protocol <{self.inputFieldFilter.get().strip()}> is not in external file Types.txt")
+            raise WrongFilterException(self.inputFieldFilter.get().strip())
 
 
         self.destroy()
@@ -137,6 +138,8 @@ def useFilter(frames, filterName):
 def getFileType(fileName, filteredFrames, filterName):
     if filterName == "ARP":
         return ArpFilterFile("PKS2023_24",fileName,filteredFrames)
+    if filterName in types["tcpProtocol"].values():
+        return TcpFilterFile("PKS2023_24",fileName,filteredFrames,filterName)
 
     else:
         return File("PKS2023_24", filename,frames,filterName=filterName)
@@ -160,6 +163,7 @@ yaml = ruamel.yaml.YAML()
 yaml.register_class(Frame)
 yaml.register_class(File)
 yaml.register_class(ArpFilterFile)
+yaml.register_class(TcpFilterFile)
 yaml.register_class(Sender)
 yaml.register_class(Ethernet)
 yaml.register_class(IeeeSNAP)
@@ -185,13 +189,15 @@ for frame in frames:
     print()
 
 # fix the hexaframe, so it retains block style 16 bytes/line
-if filterName == "ARP":
-    for comm in file.complete_comms:
-        for i in range(len(comm.packets)):
-            comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
-    for comm in file.partial_comms:
-        for i in range(len(comm.packets)):
-            comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
+if filterName == "ARP" or filterName in types["tcpProtocol"].values():
+    if hasattr(file, "complete_comms"):
+        for comm in file.complete_comms:
+            for i in range(len(comm.packets)):
+                comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
+    if hasattr(file, "partial_comms"):
+        for comm in file.partial_comms:
+            for i in range(len(comm.packets)):
+                comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
 else:
     for i in range(len(file.packets)):
         file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))
@@ -216,7 +222,7 @@ with open(file.name+".yaml",mode="w") as out:
                 out.write("- "+line) # remove hyphens at the start of lines after class tags
                 flag = 2
             # fix ipv4 sender analysis
-            elif line.strip() == "ipv4_senders:" or line.strip() == "max_send_packets_by:":
+            elif line.strip() == "ipv4_senders:" or line.strip() == "max_send_packets_by:" or line.strip() == "partial_comms:":
                 out.write(line.lstrip())
             elif flag == 2:
                 out.write("  "+line) # add indents if hyphen was removed
@@ -226,5 +232,33 @@ with open(file.name+".yaml",mode="w") as out:
         else:
             if k != 0:
                 flag = 1
+
+if filterName.strip() != "":
+    with open(file.name+".yaml",mode="r") as out:
+        lines = out.readlines()
+
+    with open(file.name+".yaml",mode="w") as out:
+
+        flag = 0
+
+        for line in lines:
+            if line.strip() == "packets:":
+                flag = 1
+                out.write(line)
+                continue
+
+            if "number_comm:" in line or "partial_comm" in line:
+                out.write(line)
+                flag = 0
+                continue
+
+
+            if flag == 1:
+                if "frame_number" in line:
+                    out.write("      - " + line[:line.index(":")].replace(" ","")[1:]+line[line.index(":"):])
+                else:
+                    out.write("  " + line)
+            else:
+                out.write(line)
 
 

@@ -1,7 +1,10 @@
 import textwrap
 from sys import exit
+
+from WrongFilterException import WrongFilterException
 from Frame import Frame
 from File import File
+from ArpFilterFile import ArpFilterFile, Communication
 from Senders import Sender
 from Ethernet import Ethernet
 from IEEERaw import IeeeRaw
@@ -17,6 +20,14 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
 from tkinter.filedialog import askopenfilename
+
+from Types import types,initialize
+initialize()
+
+filterProtocols = [types["tcpProtocol"][protocol] for protocol in types["tcpProtocol"]] + \
+                  [types["udpProtocol"][protocol] for protocol in types["udpProtocol"]] + \
+                  [types["etherTypes"][protocol] for protocol in types["etherTypes"]]   + \
+                  [types["ipv4Protocol"][protocol] for protocol in types["ipv4Protocol"]]
 
 # minimal GUI for file selection
 class GUI(tk.Tk):
@@ -66,7 +77,9 @@ class GUI(tk.Tk):
         inp = self.inputField.get()
         #showinfo(title='Information', message=f'Submitted: {inp}')
 
-        f = tuple(openFile(inp) + [self.inputFieldFilter.get()])
+        f = tuple(openFile(inp) + [self.inputFieldFilter.get().upper().strip()])
+        if self.inputFieldFilter.get().upper().strip() not in filterProtocols:
+            raise WrongFilterException
 
 
         self.destroy()
@@ -106,6 +119,30 @@ def indentifyType(index, hexFrame, iframe):
         else:
             return IeeeLLC(index, len(iframe[index]),hexFrame[:6], hexFrame[6:12], hexFrame)
 
+def useFilter(frames, filterName):
+    filtered = []
+    for frame in frames:
+        try:
+            if hasattr(frame, "app_protocol") and frame.app_protocol == filterName:
+                filtered.append(frame)
+            elif hasattr(frame, "protocol") and frame.protocol == filterName:
+                filtered.append(frame)
+            elif hasattr(frame, "ether_type") and frame.ether_type == filterName:
+                filtered.append(frame)
+        except AttributeError:
+            continue
+
+    return filtered
+
+def getFileType(fileName, filteredFrames, filterName):
+    if filterName == "ARP":
+        return ArpFilterFile("PKS2023_24",fileName,filteredFrames)
+
+    else:
+        return File("PKS2023_24", filename,frames,filterName=filterName)
+
+
+
 f = ""
 gui = GUI()
 gui.start()
@@ -122,18 +159,23 @@ filename = filename.split("/")[-1]
 yaml = ruamel.yaml.YAML()
 yaml.register_class(Frame)
 yaml.register_class(File)
+yaml.register_class(ArpFilterFile)
 yaml.register_class(Sender)
 yaml.register_class(Ethernet)
 yaml.register_class(IeeeSNAP)
 yaml.register_class(IeeeLLC)
 yaml.register_class(IeeeRaw)
+yaml.register_class(Communication)
 
 # Create Frame objects
 frames = [indentifyType(i,getCleanRaw(f,i),f)
           for i in range(len(f))
           ]
+if filterName != "":
+    frames = useFilter(frames,filterName)
 
-file = File("PKS2023_24", filename,frames,filterName=filterName)
+
+file = getFileType(filename,frames,filterName)
 
 #console output
 print()
@@ -143,8 +185,16 @@ for frame in frames:
     print()
 
 # fix the hexaframe, so it retains block style 16 bytes/line
-for i in range(len(file.packets)):
-    file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))
+if filterName == "ARP":
+    for comm in file.complete_comms:
+        for i in range(len(comm.packets)):
+            comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
+    for comm in file.partial_comms:
+        for i in range(len(comm.packets)):
+            comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
+else:
+    for i in range(len(file.packets)):
+        file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))
 
 # create yaml file
 with open(file.name+".yaml",mode="w") as out:

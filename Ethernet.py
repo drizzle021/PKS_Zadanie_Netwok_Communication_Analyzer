@@ -52,6 +52,9 @@ class Ethernet(Frame):
 
         except AttributeError:
             pass
+        s = self.hexa_frame
+        delattr(self, "hexa_frame")
+        self.hexa_frame = s
 
     # string representation of the Object
     def __str__(self):

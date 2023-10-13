@@ -19,9 +19,6 @@ class File:
                 raise WrongFilterException(filterName)
         self.packets = frames
 
-        if filterName != "":
-            self.useFilter()
-
         #TODO get rid of ipv4_senders field if theres no ipv4 in packets
         self.ipv4_senders = []
         # iterate through packets

@@ -8,7 +8,7 @@ def initialize():
             line = line.rstrip()
             if line[0] != "#":
                 key, value = tuple(line.split(" "))
-                if key[1] == "x":
+                if len(key) > 1 and key[1] == "x":
                     key = int(key[key.index("x") + 1:], 16)
                 types[name].update({key: value})
             else:

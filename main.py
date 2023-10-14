@@ -6,6 +6,8 @@ from Frame import Frame
 from File import File
 from ArpFilterFile import ArpFilterFile
 from TcpFilterFile import TcpFilterFile
+from TftpFilterFile import TftpFilterFile
+from IcmpFilterFile import IcmpFilterFile
 from Communication import Communication
 from Senders import Sender
 from Ethernet import Ethernet
@@ -24,6 +26,8 @@ from tkinter.messagebox import showerror
 from tkinter.filedialog import askopenfilename
 
 from Types import types,initialize
+
+CONSOLE_OUTPUT = False
 initialize()
 
 filterProtocols = [types["tcpProtocol"][protocol] for protocol in types["tcpProtocol"]] + \
@@ -63,7 +67,7 @@ class GUI(tk.Tk):
         self.space2 = ttk.Label(text="")
         self.space2.grid(row=4)
 
-        self.button = ttk.Button(self, text="Open")
+        self.button = ttk.Button(self, text="Open and Analyze")
         self.button["command"] = self.submit
         self.button.grid(row=5,column=1)
 
@@ -75,15 +79,19 @@ class GUI(tk.Tk):
     def submit(self):
         global f
         inp = self.inputField.get()
+        error = False
         #showinfo(title='Information', message=f'Submitted: {inp}')
+        try:
+            f = tuple(openFile(inp) + [self.inputFieldFilter.get().upper().strip()])
+            if self.inputFieldFilter.get().upper().strip() not in filterProtocols and self.inputFieldFilter.get().upper().strip() != "" :
+                showerror(title='Information', message=f"Protocol <{self.inputFieldFilter.get().strip()}> is not in external file Types.txt")
+                raise WrongFilterException(self.inputFieldFilter.get().strip())
+        except FileNotFoundError:
+            error = True
+            showerror(title='Information', message=f"Please choose a .pcap file before starting the analysis")
 
-        f = tuple(openFile(inp) + [self.inputFieldFilter.get().upper().strip()])
-        if self.inputFieldFilter.get().upper().strip() not in filterProtocols and self.inputFieldFilter.get().upper().strip() != "" :
-            showerror(title='Information', message=f"Protocol <{self.inputFieldFilter.get().strip()}> is not in external file Types.txt")
-            raise WrongFilterException(self.inputFieldFilter.get().strip())
-
-
-        self.destroy()
+        if not error:
+            self.destroy()
     def start(self):
         self.mainloop()
 
@@ -102,6 +110,7 @@ def indentifyType(index, hexFrame, iframe):
     # check if theres an ISL frame by looking at the destination bytes
     if " ".join(hexFrame[:6]) == "01 00 0C 00 00 00" or " ".join(hexFrame[:6]) == "03 00 0C 00 00 00":
         hexFrame = hexFrame[25:]
+
 
     joint = int("".join(hexFrame[12:14]), 16)
 
@@ -122,6 +131,9 @@ def indentifyType(index, hexFrame, iframe):
 
 def useFilter(frames, filterName):
     filtered = []
+    if filterName == "TFTP":
+        filterName = "UDP"
+
     for frame in frames:
         try:
             if hasattr(frame, "app_protocol") and frame.app_protocol == filterName:
@@ -138,9 +150,12 @@ def useFilter(frames, filterName):
 def getFileType(fileName, filteredFrames, filterName):
     if filterName == "ARP":
         return ArpFilterFile("PKS2023_24",fileName,filteredFrames)
-    if filterName in types["tcpProtocol"].values():
+    elif filterName == "TFTP":
+        return TftpFilterFile("PKS2023_24", fileName, filteredFrames)
+    elif filterName == "ICMP":
+        return IcmpFilterFile("PKS2023_24", fileName, filteredFrames)
+    elif filterName in types["tcpProtocol"].values():
         return TcpFilterFile("PKS2023_24",fileName,filteredFrames,filterName)
-
     else:
         return File("PKS2023_24", filename,frames,filterName=filterName)
 
@@ -164,6 +179,8 @@ yaml.register_class(Frame)
 yaml.register_class(File)
 yaml.register_class(ArpFilterFile)
 yaml.register_class(TcpFilterFile)
+yaml.register_class(TftpFilterFile)
+yaml.register_class(IcmpFilterFile)
 yaml.register_class(Sender)
 yaml.register_class(Ethernet)
 yaml.register_class(IeeeSNAP)
@@ -182,20 +199,26 @@ if filterName != "":
 file = getFileType(filename,frames,filterName)
 
 #console output
-print()
-print()
-for frame in frames:
-    print(frame)
+if CONSOLE_OUTPUT:
     print()
+    print()
+    for frame in frames:
+        print(frame)
+        print()
 
 # fix the hexaframe, so it retains block style 16 bytes/line
-if filterName == "ARP" or filterName in types["tcpProtocol"].values():
+if filterName == "ARP" or filterName in types["tcpProtocol"].values() or filterName == "ICMP":
     if hasattr(file, "complete_comms"):
         for comm in file.complete_comms:
             for i in range(len(comm.packets)):
                 comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
     if hasattr(file, "partial_comms"):
         for comm in file.partial_comms:
+            for i in range(len(comm.packets)):
+                comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
+elif filterName == "TFTP":
+    if hasattr(file,"complete_comms"):
+        for comm in file.complete_comms:
             for i in range(len(comm.packets)):
                 comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
 else:

@@ -52,6 +52,20 @@ class Ethernet(Frame):
 
         except AttributeError:
             pass
+
+        if hasattr(self,"protocol") and self.protocol == "ICMP":
+            if str(int("".join(data[34]),16)) in types["icmpTypes"].keys():
+                self.icmp_type = types["icmpTypes"][str(int("".join(data[34]),16))]
+            if hasattr(self, "icmp_type") and self.icmp_type == "TIME_EXCEEDED":
+                self.icmp_id = int("".join(data[-4:-2]), 16)
+                self.icmp_seq = int("".join(data[-2:]), 16)
+            else:
+                self.icmp_id = int("".join(data[38:40]), 16)
+                self.icmp_seq = int("".join(data[40:42]), 16)
+            delattr(self,"src_port")
+            delattr(self, "dst_port")
+
+
         s = self.hexa_frame
         delattr(self, "hexa_frame")
         self.hexa_frame = s

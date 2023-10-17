@@ -25,8 +25,6 @@ class TftpFilterFile:
                     flag = 0
                     comm.append(part)
 
-
-
         return comm
 
     def findComms(self):

@@ -8,6 +8,7 @@ from ArpFilterFile import ArpFilterFile
 from TcpFilterFile import TcpFilterFile
 from TftpFilterFile import TftpFilterFile
 from IcmpFilterFile import IcmpFilterFile
+from CdpFilterFile import CdpFilterFile
 from Communication import Communication
 from Senders import Sender
 from Ethernet import Ethernet
@@ -33,7 +34,7 @@ initialize()
 filterProtocols = [types["tcpProtocol"][protocol] for protocol in types["tcpProtocol"]] + \
                   [types["udpProtocol"][protocol] for protocol in types["udpProtocol"]] + \
                   [types["etherTypes"][protocol] for protocol in types["etherTypes"]]   + \
-                  [types["ipv4Protocol"][protocol] for protocol in types["ipv4Protocol"]]
+                  [types["ipv4Protocol"][protocol] for protocol in types["ipv4Protocol"] ]+ ["CDP"]
 
 # minimal GUI for file selection
 class GUI(tk.Tk):
@@ -41,35 +42,38 @@ class GUI(tk.Tk):
         super().__init__()
 
         self.title("PKS - Communication Analyzer")
-        self.geometry("400x150")
+        self.geometry("400x170")
         self.resizable(False, False)
 
-        self.fileLabel = ttk.Label(self, text="File Path:",font=("Arial",12),justify="left")
-        self.fileLabel.grid(column=0,row=0)
+        self.space0 = ttk.Label(text="")
+        self.space0.grid(row=0)
+
+        self.fileLabel = ttk.Label(self, text="File Path:",font=("Arial",12),anchor="w",justify="left",width= 10)
+        self.fileLabel.grid(column=1,row=1,padx=40, sticky="W")
 
         self.space1 = ttk.Label(text="")
-        self.space1.grid(row=1)
+        self.space1.grid(row=2)
 
         self.fButton = ttk.Button(self, text="Select File")
         self.fButton["command"] = self.selectFile
-        self.fButton.grid(pady=4,column=1,row=2)
+        self.fButton.grid(pady=4,column=2,row=3)
 
         self.inputField = ttk.Entry(self)
-        self.inputField.grid(column=1,row=0 )
+        self.inputField.grid(column=2,row=1 )
 
 
         self.filterLabel = ttk.Label(self, text="Filter Parameter:",font=("Arial",12),anchor="w",justify="left")
-        self.filterLabel.grid(pady=4,row=3,column=0)
+        self.filterLabel.grid(pady=4, padx=40,row=4,column=1,sticky="W")
 
         self.inputFieldFilter = ttk.Entry(self)
-        self.inputFieldFilter.grid(row=3,column=1)
+        self.inputFieldFilter.grid(row=4,column=2)
 
         self.space2 = ttk.Label(text="")
-        self.space2.grid(row=4)
+        self.space2.grid(row=5)
 
         self.button = ttk.Button(self, text="Open and Analyze")
         self.button["command"] = self.submit
-        self.button.grid(row=5,column=1)
+        self.button.grid(row=6,column=2)
 
     def selectFile(self):
         filename = askopenfilename()
@@ -84,11 +88,11 @@ class GUI(tk.Tk):
         try:
             f = tuple(openFile(inp) + [self.inputFieldFilter.get().upper().strip()])
             if self.inputFieldFilter.get().upper().strip() not in filterProtocols and self.inputFieldFilter.get().upper().strip() != "" :
-                showerror(title='Information', message=f"Protocol <{self.inputFieldFilter.get().strip()}> is not in external file Types.txt")
+                showerror(title='Error', message=f"Protocol <{self.inputFieldFilter.get().strip()}> is not in external file Types.txt")
                 raise WrongFilterException(self.inputFieldFilter.get().strip())
         except FileNotFoundError:
             error = True
-            showerror(title='Information', message=f"Please choose a .pcap file before starting the analysis")
+            showerror(title='Error', message=f"Please choose a .pcap file before starting the analysis")
 
         if not error:
             self.destroy()
@@ -142,6 +146,8 @@ def useFilter(frames, filterName):
                 filtered.append(frame)
             elif hasattr(frame, "ether_type") and frame.ether_type == filterName:
                 filtered.append(frame)
+            elif hasattr(frame,"pid") and frame.pid == filterName:
+                filtered.append(frame)
         except AttributeError:
             continue
 
@@ -154,8 +160,10 @@ def getFileType(fileName, filteredFrames, filterName):
         return TftpFilterFile("PKS2023_24", fileName, filteredFrames)
     elif filterName == "ICMP":
         return IcmpFilterFile("PKS2023_24", fileName, filteredFrames)
-    elif filterName in types["tcpProtocol"].values():
+    elif filterName in types["tcpProtocol"].values() or filterName == "TCP":
         return TcpFilterFile("PKS2023_24",fileName,filteredFrames,filterName)
+    elif filterName == "CDP":
+        return CdpFilterFile("PKS2023_24",fileName,filteredFrames,filterName)
     else:
         return File("PKS2023_24", filename,frames,filterName=filterName)
 
@@ -165,7 +173,7 @@ f = ""
 gui = GUI()
 gui.start()
 
-# if file is not chosen exit the program (insert shrug ascii art)
+# if file is not chosen exit the program ¯\_(ツ)_/¯  <- shrug ascii art
 if f == "":
     print("File was not chosen")
     exit(1)
@@ -181,6 +189,7 @@ yaml.register_class(ArpFilterFile)
 yaml.register_class(TcpFilterFile)
 yaml.register_class(TftpFilterFile)
 yaml.register_class(IcmpFilterFile)
+yaml.register_class(CdpFilterFile)
 yaml.register_class(Sender)
 yaml.register_class(Ethernet)
 yaml.register_class(IeeeSNAP)
@@ -207,7 +216,7 @@ if CONSOLE_OUTPUT:
         print()
 
 # fix the hexaframe, so it retains block style 16 bytes/line
-if filterName == "ARP" or filterName in types["tcpProtocol"].values() or filterName == "ICMP":
+if filterName == "ARP" or filterName in types["tcpProtocol"].values() or filterName == "ICMP" or filterName == "TCP":
     if hasattr(file, "complete_comms"):
         for comm in file.complete_comms:
             for i in range(len(comm.packets)):
@@ -221,6 +230,11 @@ elif filterName == "TFTP":
         for comm in file.complete_comms:
             for i in range(len(comm.packets)):
                 comm.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(comm.packets[i].hexa_frame))
+
+elif filterName == "CDP":
+    for packet in file.packets:
+        packet.hexa_frame = LiteralScalarString(textwrap.dedent(packet.hexa_frame))
+
 else:
     for i in range(len(file.packets)):
         file.packets[i].hexa_frame = LiteralScalarString(textwrap.dedent(file.packets[i].hexa_frame))
@@ -248,15 +262,20 @@ with open(file.name+".yaml",mode="w") as out:
             elif line.strip() == "ipv4_senders:" or line.strip() == "max_send_packets_by:" or line.strip() == "partial_comms:":
                 out.write(line.lstrip())
             elif flag == 2:
-                out.write("  "+line) # add indents if hyphen was removed
+                if "number_of_frames" in line:
+                    out.write(line.lstrip())
+                else:
+                    out.write("  "+line) # add indents if hyphen was removed
+
 
             else:
                 out.write(line)
+
         else:
             if k != 0:
                 flag = 1
 
-if filterName.strip() != "":
+if filterName.strip() != "" and filterName!= "CDP":
     with open(file.name+".yaml",mode="r") as out:
         lines = out.readlines()
 

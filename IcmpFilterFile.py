@@ -30,12 +30,16 @@ class IcmpFilterFile:
         complete = []
 
         for frame in self.packets:
-            if ((frame.src_ip, frame.dst_ip) == connection or (frame.dst_ip, frame.src_ip) == connection) and frame.icmp_type != "DESTINATION_UNREACHABLE":
+            is_fragmented = False
+            if not hasattr(frame,"icmp_type"):
+                is_fragmented = True
+            if ((frame.src_ip, frame.dst_ip) == connection or (frame.dst_ip, frame.src_ip) == connection) and not is_fragmented and frame.icmp_type != "DESTINATION_UNREACHABLE":
                 comms.append(frame)
-            elif frame.icmp_type == "TIME_EXCEEDED" and len(comms) >= 1 and frame.icmp_id == comms[-1].icmp_id and frame.icmp_seq == comms[-1].icmp_seq:
+            elif not is_fragmented and frame.icmp_type == "TIME_EXCEEDED" and len(comms) >= 1 and frame.icmp_id == comms[-1].icmp_id and frame.icmp_seq == comms[-1].icmp_seq:
                 comms.append(frame)
-            elif frame.icmp_type == "DESTINATION_UNREACHABLE":
+            elif not is_fragmented and frame.icmp_type == "DESTINATION_UNREACHABLE":
                 partial.append(frame)
+
 
         while len(comms) > 0:
             try:

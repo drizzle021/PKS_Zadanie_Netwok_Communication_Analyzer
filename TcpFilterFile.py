@@ -20,7 +20,7 @@ class TcpFilterFile:
         if not self.partial_comms:
             delattr(self,"partial_comms")
 
-    def checkHandshake(self, connection) -> bool:
+    def checkHandshake(self, connection:tuple) -> bool:
         handshake = ""
         opening = False
         ending = False
@@ -34,6 +34,7 @@ class TcpFilterFile:
             if "2 18 16" in handshake:
                 opening = True
                 break
+
         # if the handshake didnt happen return False since we already have a partial communication
         if not opening:
             return False
@@ -54,16 +55,16 @@ class TcpFilterFile:
         if handshake[-1] == "4":
             ending = True
 
-        # RST ACK
+        # RST+ACK
         elif handshake[-1] == "20":
             ending = True
 
         # FIN+ACK FIN+ACK ACK
-        elif handshake[-1] == "16" and handshake[-2] == "17" and handshake[-3] == "17":
+        elif handshake[-1] == "16" and (handshake[-2] == "17" or handshake[-2] == "25" or handshake[-2] == "9") and (handshake[-2] == "17" or handshake[-2] == "25" or handshake[-2] == "9"):
             ending = True
 
         # FIN+ACK ACK FIN+ACK ACK
-        elif handshake[-1] == "16" and handshake[-2] == "17" and handshake[-3] == "16" and handshake[-4] == "17":
+        elif handshake[-1] == "16" and (handshake[-2] == "17" or handshake[-2] == "25" or handshake[-2] == "9") and handshake[-3] == "16" and (handshake[-4] == "17" or handshake[-2] == "25" or handshake[-2] == "9"):
             ending = True
 
 
